@@ -16,5 +16,5 @@ TMI.JS ->  https://tmijs.com/
 ## Execução
 #
 `
-$npm run prod
+$npm start
 `
