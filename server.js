@@ -3,6 +3,10 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+let voteskip = 0;
+let users = [];
+const limit = 5;
+
 const client = new tmi.Client({
     identity: {
         username: process.env.CLIENT_ID,
@@ -11,10 +15,6 @@ const client = new tmi.Client({
     channels: [ process.env.CHANNEL_NAME ]
 });
 client.connect().catch(console.error);
-
-let voteskip = 0;
-let usuarios = [];
-const limite = 5;
 
 const outputCommand = process.env.OUTPUT_COMMAND;
 
@@ -25,18 +25,18 @@ function sleep (time) {
 client.on('message', (channel, tags, message, self) => {
     if(self) return;
     if(message.toLowerCase() === '!voteskip') {
-        if(usuarios.includes(tags['user-id'])){
+        if(users.includes(tags['user-id'])){
             client.say(channel, `@${tags.username} já está na lista de usuários da votação!`);
         }  else{
-            if (voteskip < limite){
-                usuarios.push(tags['user-id']);
+            if (voteskip < limit){
+                users.push(tags['user-id']);
                 voteskip++;
-                client.say(channel, `@${tags.username} pediu para pular a música, ${voteskip}/${limite} !`)
+                client.say(channel, `@${tags.username} pediu para pular a música, ${voteskip}/${limit} !`)
             }  
-            if (voteskip >= limite) {
+            if (voteskip >= limit) {
                 sleep(1500).then(() => {
                     client.say(channel, outputCommand);
-                    usuarios = [];
+                    users = [];
                     voteskip = 0;
                 })
             }
@@ -45,7 +45,7 @@ client.on('message', (channel, tags, message, self) => {
         if(!(tags.badges.vip || tags.mod)){
             client.say(channel, `@${tags.username}, você não possui permissão para este comando!`);
         } else{
-            usuarios = [];
+            users = [];
             voteskip = 0;
             client.say(channel, `@${tags.username} resetou o voteskip!`);
         }
