@@ -4,12 +4,11 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const client = new tmi.Client({
-	options: { debug: true },
-	identity: {
-		username: process.env.CLIENT_ID,
-		password: process.env.OAUTH,
-	},
-	channels: [ process.env.CHANNEL_NAME ]
+    identity: {
+        username: process.env.CLIENT_ID,
+        password: process.env.OAUTH,
+    },
+    channels: [ process.env.CHANNEL_NAME ]
 });
 client.connect().catch(console.error);
 
@@ -24,7 +23,7 @@ function sleep (time) {
 }
 
 client.on('message', (channel, tags, message, self) => {
-	if(self) return;
+    if(self) return;
     if(message.toLowerCase() === '!voteskip') {
         if(usuarios.includes(tags['user-id'])){
             client.say(channel, `@${tags.username} já está na lista de usuários da votação!`);
@@ -52,4 +51,3 @@ client.on('message', (channel, tags, message, self) => {
         }
     }
 });
-
