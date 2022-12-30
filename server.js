@@ -5,7 +5,8 @@ dotenv.config();
 
 let voteskip = 0;
 let users = [];
-const limit = 5;
+const limit = Number.parseInt(process.env.LIMIT_TO_SKIP) || 5;
+const prefix = process.env.PREFIX || "!";
 
 const client = new tmi.Client({
     identity: {
