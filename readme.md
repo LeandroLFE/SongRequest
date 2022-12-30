@@ -5,12 +5,15 @@ Programa realiza uma votação no chat de uma live na Twitch e verifica se houve
 # 
 ## Requerimentos
 # 
-`
-NodeJS
-`
 ###
+> NodeJS
+###
+> TMI.JS : https://tmijs.com/
+###
+#
+## Instalação
 `
-TMI.JS ->  https://tmijs.com/
+$npm install
 `
 #
 ## Execução
