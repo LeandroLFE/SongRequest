@@ -3,10 +3,21 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-let voteskip = 0;
+let voteSkipCounter = 0;
 let users = [];
 const limit = Number.parseInt(process.env.LIMIT_TO_SKIP) || 5;
 const prefix = process.env.PREFIX || "!";
+
+const commands = [{
+    name: "voteskip",
+    exec: cmdVoteSkip,
+    args: [
+            {arg: "", requireModVip: false},
+            {arg: "reset", requireModVip: true}
+        ]
+}]
+
+const outputCommand = process.env.OUTPUT_COMMAND || "!skipsound";
 
 const client = new tmi.Client({
     identity: {
@@ -15,40 +26,79 @@ const client = new tmi.Client({
     },
     channels: [ process.env.CHANNEL_NAME ]
 });
-client.connect().catch(console.error);
 
-const outputCommand = process.env.OUTPUT_COMMAND;
+client.connect().catch(console.error);
 
 function sleep (time) {
     return new Promise((resolve) => setTimeout(resolve, time));
 }
 
-client.on('message', (channel, tags, message, self) => {
-    if(self) return;
-    if(message.toLowerCase() === '!voteskip') {
+function checkIsModOrVIPOrBroadCaster(tags){
+    return tags.mod || tags.badges.vip || tags.badges.broadcaster;
+}
+
+function checkRequirePermission(tags, getArg){
+    const noPermitMsg = `@${tags.username}, você não possui permissão para este comando!`;
+    if(getArg.requireModVip && !(checkIsModOrVIPOrBroadCaster(tags))){
+        return noPermitMsg;
+    }
+    return false;
+}
+
+function cmdVoteSkip(command, tags, args = []){
+    let getArg = args.length === 0 ? command.args[0] : false;
+    if(getArg) {
+        const checkPermissions = checkRequirePermission(tags, getArg);
+        if (checkPermissions){
+            return checkPermissions;
+        }
         if(users.includes(tags['user-id'])){
-            client.say(channel, `@${tags.username} já está na lista de usuários da votação!`);
+            return `@${tags.username} já está na lista de usuários da votação!`;
         }  else{
-            if (voteskip < limit){
+            if (voteSkipCounter < limit){
                 users.push(tags['user-id']);
-                voteskip++;
-                client.say(channel, `@${tags.username} pediu para pular a música, ${voteskip}/${limit} !`)
+                voteSkipCounter++;
+                return `@${tags.username} pediu para pular a música, ${voteSkipCounter}/${limit}!`;
             }  
-            if (voteskip >= limit) {
+            if (voteSkipCounter >= limit) {
                 sleep(1500).then(() => {
-                    client.say(channel, outputCommand);
                     users = [];
-                    voteskip = 0;
+                    voteSkipCounter = 0;
+                    return outputCommand;
                 })
             }
         } 
-    } else if (message.toLowerCase() === '!voteskip reset') {
-        if(!(tags.badges.vip || tags.mod)){
-            client.say(channel, `@${tags.username}, você não possui permissão para este comando!`);
-        } else{
+    } else {
+        getArg = command.args.find((arg) => arg.arg ===  args[0]);
+        if (getArg) {
+            const checkPermissions = checkRequirePermission(tags, getArg);
+            if (checkPermissions){
+                return checkPermissions;
+            }
             users = [];
-            voteskip = 0;
-            client.say(channel, `@${tags.username} resetou o voteskip!`);
+            voteSkipCounter = 0;
+            return `@${tags.username} resetou o voteskip!`;
+        } 
+    }
+    return false;
+}
+
+function treatCommand(channel, tags, message){
+    const args = message.split(" ");
+    const cmd = args.shift();
+    const command = commands.filter((e) => e.name === cmd);
+
+    if (command){
+        const msg = command[0].exec(command[0], tags, args);
+        if (msg){
+            client.say(channel, msg);
         }
+    }
+}
+
+client.on('message', (channel, tags, message, self) => {
+    if(self) return;
+    if(message.startsWith(prefix)){
+        treatCommand(channel, tags, message.toLowerCase().slice(1));
     }
 });
